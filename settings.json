@@ -1,0 +1,11 @@
+{
+  "customOverride": "false",
+  "default": {
+    "WindowState": "Maximized",
+    "Title": "Wolfenclone"
+  },
+  "custom": {
+    "WindowState": "Fullscreen",
+    "Title": "Wolfenclone"
+  }
+}
