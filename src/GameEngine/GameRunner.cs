@@ -18,7 +18,7 @@ namespace GameEngine {
     // Care should be taken if the Window reference is changed. Consider: resizing window.
     private RenderWindow? _targetWindow;
 
-    /// Observe messages.
+    /// Observe received messages.
     public void Notify(String message){
       if(message.Equals("WINDOWCLOSE")){
         this._running = false;
@@ -32,10 +32,11 @@ namespace GameEngine {
         this.Quit(); return;
       }
 
-      // SHIFT-ESC: Quit, if necessary.
-      if(
-        this._targetWindow.KeyboardState.IsKeyDown(Keys.LeftShift) &&
-        this._targetWindow.KeyboardState.IsKeyDown(Keys.Escape)){
+      // Grab the Keyboard.
+      KeyboardState input = this._targetWindow.KeyboardState;
+
+      // CTRL-W: Quit, if necessary.
+      if(input.IsKeyDown(Keys.LeftControl) && input.IsKeyDown(Keys.W)){
         this.Quit();
       }
       // --

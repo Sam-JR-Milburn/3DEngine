@@ -27,8 +27,11 @@ namespace RenderEngine {
       GL.DrawArrays(PrimitiveType.Triangles, 0, objectSize);
     }
 
-    /// <remarks> ... </remarks>
-    public GraphicsObject(String textureFilename){
+    /// <summary> Instantiate a new graphics object with a texture. </summary>
+    /// <remarks>
+    /// At some point, it should take vertex and texture mapping from .OBJ files.
+    /// </remarks>
+    public GraphicsObject(Texture texture){
       /// <remarks> Delete me later... </remarks>
       float[] manualVertices = {
         -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
@@ -71,13 +74,7 @@ namespace RenderEngine {
       /// <remarks> This should be loaded from file in the future </remarks>
       this._vertices = manualVertices; // Workaround with the initialiser.
 
-      try { // Above is just temporary, until Obj style files can be worked out.
-          this._texture = new Texture(textureFilename); // This *can* throw exceptions.
-      } catch {
-        Logger.LogToFile("GraphicsObject: Couldn't load texture ["+textureFilename+"].");
-        throw;
-      }
-      // EOF Constructor
+      this._texture = texture;
     }
   }
 }

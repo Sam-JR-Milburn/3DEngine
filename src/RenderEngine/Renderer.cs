@@ -8,14 +8,22 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 
 using OpenTK.Windowing.Common.Input; // DEBUG: Mouse Cursor.
 using Misc; // Logger.
+using System.Text.Json;
 
 namespace RenderEngine {
 
-  /// <remarks> ... </remarks>
+  /// <remarks> Parameterless class for JSON deserialisation. </remarks>
+  public class ResourceStrings {
+    public required String name { get; set; }
+    public required String filename { get; set; }
+  }
+
+  /// <summary> Renderer: establish resources, render them. </summary>
   public class Renderer : IDisposable {
     /// <remarks> Container for Textures + Vertices. </remarks>
-    private Dictionary<String, GraphicsObject> _graphicsObjects =
-      new Dictionary<String, GraphicsObject>();
+    private Dictionary<String, GraphicsObject> _graphicsObjects = new Dictionary<String, GraphicsObject>();
+    /// <remarks> Simple pink texture if one fails to load. </remarks>
+    private Texture _defaultTexture;
 
     /// <summary> Consistent references to OpenGL render resources. </summary>
     /// <remarks> No need for ElementBufferObject any longer. </remarks>
@@ -31,21 +39,72 @@ namespace RenderEngine {
     /// <remarks> Move me to GameRunner??? There should be a reference here, but yea. </remarks>
     private Camera _camera;
 
+    /// <remarks> ... </remarks>
+    private readonly String _resDir = "res/"; private readonly String _textureDir = "textures/";
+
+    /// --
+    private void LoadGraphicsObjects(String resourcesListFilename){
+      if(String.IsNullOrEmpty(resourcesListFilename)){
+        throw new ArgumentException("Renderer: invalid resource list filename.");
+      }
+      if(!File.Exists(resourcesListFilename)){
+        Logger.LogToFile("Renderer: couldn't load the resources file.");
+        throw new FileNotFoundException("Renderer: couldn't load the resources file.");
+      }
+      // Load here with JSON.
+      String jsonStr = File.ReadAllText(resourcesListFilename);
+      List<ResourceStrings>? resourceStrings = JsonSerializer.Deserialize<List<ResourceStrings>>(jsonStr);
+      // --
+      if(!(resourceStrings is List<ResourceStrings>)){
+        String err = "LoadGraphicsObjects() couldn't deserialize JSON from "+resourcesListFilename+".";
+        Logger.LogToFile(err); throw new NullReferenceException(err);
+      }
+
+      foreach(ResourceStrings rs in resourceStrings){
+        Texture texture; String fullPath = this._resDir+this._textureDir+rs.filename;
+        try {
+          texture = new Texture(fullPath); // This can throw exceptions if it's not there.
+        } catch {
+          Logger.LogToFile("Renderer: LoadGraphicsObjects() couldn't load "+fullPath+".");
+          texture = this._defaultTexture; // Pink 1x1 image to indicate missing texture.
+        }
+        this._graphicsObjects.Add(rs.name, new GraphicsObject(texture));
+      }
+    }
+
     /// <summary> Load the shader and texture assets from self-describing data. </summary>
     private void LoadAssets(){
-      String resDir = "res/"; String textureDir = "textures/";
       try {
         this._textureShader = new Shader( // Used for most rendering.
-          resDir+"textureshader.vert",
-          resDir+"textureshader.frag");
+          this._resDir+"textureshader.vert",
+          this._resDir+"textureshader.frag");
       } catch {
-        Logger.LogToFile("Renderer couldn't load the texture shader."); throw;
+        Logger.LogToFile("Renderer: failed to load the texture shader."); throw;
+      }
+
+      /// <remarks> We need this if other textures fail to load. </remarks>
+      try {
+        this._defaultTexture = new Texture(this._resDir+this._textureDir+"pink.png");
+      } catch {
+        Logger.LogToFile("Renderer: failed to load default pink texture.");
+        throw;
       }
 
       /// <remarks> This should be loaded as identity string:texture filename pairs </remarks>
-      this._graphicsObjects.Add("object-1", new GraphicsObject(resDir+textureDir+"sandstone-1.jpg"));
-      this._graphicsObjects.Add("object-2", new GraphicsObject(resDir+textureDir+"sandstone-2.png"));
-      this._graphicsObjects.Add("object-3", new GraphicsObject(resDir+textureDir+"sandstone-3.png"));
+      /*
+      Texture texture;
+      texture = new Texture(resDir+textureDir+"sandstone-1.jpg");
+      this._graphicsObjects.Add("object-1", new GraphicsObject(texture));
+
+      texture = new Texture(resDir+textureDir+"sandstone-2.png");
+      this._graphicsObjects.Add("object-2", new GraphicsObject(texture));
+
+      texture = new Texture(resDir+textureDir+"sandstone-3.png");
+      this._graphicsObjects.Add("object-3", new GraphicsObject(texture));
+      */
+
+      /// <summary> Load GraphicsObject(s) with a resources file, and associate them with string names. </summary>
+      this.LoadGraphicsObjects(this._resDir+"resources.json");
     }
 
     /// <summary> Builds the OpenGL render objects, and informs how to process data. </summary>
@@ -161,7 +220,7 @@ namespace RenderEngine {
       // Draw test object 1.
       Matrix4 model = Matrix4.CreateTranslation(5.5f,-1.25f,5.5f);
       this._textureShader.SetMatrix4("model", model); // Local Space -> World Space translation.
-      this._graphicsObjects["object-1"].Draw(this._textureShader); // Actually draw.
+      this._graphicsObjects["sandstone-1"].Draw(this._textureShader); // Actually draw.
 
       // Draw test object 2.
       model = Matrix4.CreateTranslation(7.5f,-6.25f,7.5f); // World-space.
@@ -170,17 +229,16 @@ namespace RenderEngine {
         (float)Math.Sin(DateTime.Now.TimeOfDay.TotalMilliseconds/1000),
         0.0f);
       this._textureShader.SetMatrix4("model", model); // Local Space -> World Space translation.
-      this._graphicsObjects["object-2"].Draw(this._textureShader); // Actually draw.
+      this._graphicsObjects["sandstone-2"].Draw(this._textureShader); // Actually draw.
 
       // Draw test object 3.
       model = Matrix4.CreateTranslation(-5.5f,-1.25f,5.5f);
       model *= Matrix4.CreateRotationX(45.0f);
       model *= Matrix4.CreateRotationY(45.0f);
       this._textureShader.SetMatrix4("model", model); // Local Space -> World Space translation.
-      this._graphicsObjects["object-3"].Draw(this._textureShader); // Actually draw.
+      this._graphicsObjects["sandstone-3"].Draw(this._textureShader); // Actually draw.
 
-      // Swap buffers: render with the window.
-      window.SwapBuffers();
+      window.SwapBuffers(); // Swap buffers: render with the window.
     }
 
     /// <remarks> Pass the aspect ratio through constructor chaining. </remarks>
@@ -197,7 +255,6 @@ namespace RenderEngine {
 
     /// <summary> Build and establish the rendering portion of the RenderEngine </summary>
     public Renderer(float fov, float aspectRatio){
-      //this._aspectRatio = aspectRatio;
       try {
         this.LoadAssets();
       } catch {
@@ -206,7 +263,11 @@ namespace RenderEngine {
       }
       // This shouldn't happen, but the compiler won't shut up about references on exit.
       if(!(this._textureShader is Shader)){
-        throw new NullReferenceException("Renderer: TextureShader is not instantiated. ");
+        throw new NullReferenceException("Renderer: texture shader is not instantiated. ");
+      }
+      // This also shouldn't happen, but likewise the compiler won't shut up.
+      if(!(this._defaultTexture is Texture)){
+        throw new NullReferenceException("Renderer: default texture is not instantiated. ");
       }
 
       /// <remarks> Consider: saved games where this will need to change. </remarks>

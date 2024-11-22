@@ -2,7 +2,7 @@
 using System;
 using System.Json;
 using System.IO;
-using System.Threading; // Calls the GameEngine loop.
+using System.Threading; // Calls the GameEngine loop [and any others].
 
 // For the MonitorInfo functionality.
 using OpenTK.Windowing.Desktop;
@@ -25,7 +25,7 @@ namespace Initialisation {
       return true;
     }
 
-    /// <remarks> </remarks>
+    /// <remarks> Decides if we use the default settings or if we use the custom instead. </remarks>
     private static bool _settingsOverride = false;
 
     /// <summary> Our default options from the settings.json file. </summary>
@@ -91,6 +91,7 @@ namespace Initialisation {
 
       JsonValue settingsBlock; // Assign the NativeWindowSettings.
 
+
       // Does the custom override the default? Check.
       if(settingsJson.ContainsKey("customOverride")){
         String customOverride = settingsJson["customOverride"].ToString();
@@ -101,14 +102,14 @@ namespace Initialisation {
         }
       }
 
-      // Load our default. Necessary.
+      // Load our default settings. Necessary.
       if(!settingsJson.ContainsKey("default")){
         throw new ArgumentException("settings.json needs a default settings block.");
       }
       settingsBlock = settingsJson["default"];
       InitMain._windowSettingsDefault = InitMain.ParseSettingsTree(settingsBlock);
 
-      // Load our custom. Not-necessary.
+      // Load our custom settings. Not-necessary.
       if(settingsJson.ContainsKey("custom")){
         settingsBlock = settingsJson["custom"];
         InitMain._windowSettingsCustom = InitMain.ParseSettingsTree(settingsBlock);
@@ -116,7 +117,7 @@ namespace Initialisation {
     }
 
 		/// <summary>
-    /// Process initial arguments, collect system information.
+    /// Process initial arguments, collect system information, star threads.
     /// </summary>
 		public static void Main(String[] args){
       // Load settings file.
@@ -141,8 +142,8 @@ namespace Initialisation {
       // Game logic run in a separate thread, communicating through the observer pattern.
       new Thread(() => { runner.Run(); }).Start();
       // -- // If there are other threads, like sound FX, call them here. // -- //
-      // Run Window after setting up multithreading.
-      window.Run();
+
+      window.Run(); // Run Window after setting up multithreading.
 		}
     // EOF InitMain.
 	}
