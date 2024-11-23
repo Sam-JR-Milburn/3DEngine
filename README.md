@@ -5,5 +5,8 @@ This was formerly a project called 'Wolfenclone', intended to be a classic rayca
 With OpenGL, a regular 3D engine was counterintuitively easier. 
 I've made this new repository, and cloned the original C# source code, with a few small adjustments.
 
+## Here's the most recent build:
+[![Recent build: Flying between heterogenously textured objects](https://img.youtube.com/vi/cEo3Yvye_JY/maxresdefault.jpg)](https://www.youtube.com/watch?v=cEo3Yvye_JY)
+
 ## Here's an earlier build of the engine:
 [![Progress Demonstration with OpenTK](https://img.youtube.com/vi/XDCoSlWWiUE/maxresdefault.jpg)](https://youtu.be/XDCoSlWWiUE)
